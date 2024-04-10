@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      args:
+        user: juan
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: app-php-img
+    working_dir: /var/www/
+    restart: always
+    volumes:
+      - ./www:/var/www/
+    networks:
+      - app-php-network
+
+  web:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./.docker/nginx/:/etc/nginx/conf.d/
+      - ./www:/var/www/
+    networks:
+      - app-php-network
+
+  mariadb:
+    image: mariadb:10.3
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./.docker/mysql:/var/lib/mysql
+    networks:
+      - app-php-network
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      - PMA_ARBITRARY=1
+      - UPLOAD_LIMIT=1024M
+      - MAX_EXECUTION_TIME=-1
+    networks:
+      - app-php-network
+
+  redis:
+    image: redis:latest
+    networks:
+      - app-php-network
+
+networks:
+  app-php-network:
+    driver: bridge
